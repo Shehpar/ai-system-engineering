@@ -1,0 +1,17 @@
+AI SYSTEMS ENGINEERING - PROJECT EVALUATION
+===========================================
+Model: Isolation Forest (Anomaly Detection)
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       1.00      1.00      1.00       950
+           1       0.92      0.92      0.92        50
+
+    accuracy                           0.99      1000
+   macro avg       0.96      0.96      0.96      1000
+weighted avg       0.99      0.99      0.99      1000
+
+Confusion Matrix:
+[[946   4]
+ [  4  46]]

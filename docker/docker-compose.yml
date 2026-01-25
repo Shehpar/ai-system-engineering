@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  # Our AI Anomaly Detection Application
+  ai_app:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ../data:/app/data
+      - ../results:/app/results
+    depends_on:
+      - influxdb
+
+  # Database to store metrics for the dashboard
+  influxdb:
+    image: influxdb:1.8
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_DB=system_metrics
+
+  # Grafana for the Visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - influxdb
