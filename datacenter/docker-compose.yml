@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  flask_prod_server:
+    build: ./flask_app
+    container_name: flask_prod_server
+    ports:
+      - "5005:5000" # Access via port 5005 to avoid conflicts
+
+  telegraf_agent:
+    image: telegraf:latest
+    container_name: telegraf_site_b
+    user: root
+    depends_on:
+      - flask_prod_server
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
