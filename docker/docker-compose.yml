@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Our AI Anomaly Detection Application
   ai_app:
@@ -9,8 +7,16 @@ services:
     volumes:
       - ../data:/app/data
       - ../results:/app/results
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
     depends_on:
       - influxdb
+      - mlflow
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,sys; sys.exit(0 if os.path.exists('/app/data/processed/system_metrics_processed.csv') else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
   # Database to store metrics for the dashboard
   influxdb:
@@ -19,6 +25,11 @@ services:
       - "8086:8086"
     environment:
       - INFLUXDB_DB=system_metrics
+    healthcheck:
+      test: ["CMD-SHELL", "influx -execute 'SHOW DATABASES' >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
 
   # Grafana for the Visualization
   grafana:
@@ -27,3 +38,27 @@ services:
       - "3000:3000"
     depends_on:
       - influxdb
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # MLflow Tracking Server
+  mlflow:
+    image: python:3.11-slim
+    working_dir: /mlflow
+    volumes:
+      - ../mlflow:/mlflow
+    ports:
+      - "5000:5000"
+    command: >
+      /bin/sh -c "pip install --no-cache-dir mlflow==2.9.2 && \
+      mlflow server --host 0.0.0.0 --port 5000 \
+      --backend-store-uri sqlite:///mlflow.db \
+      --default-artifact-root /mlflow/artifacts"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:5000'); sys.exit(0)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5

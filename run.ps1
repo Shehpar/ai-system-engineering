@@ -28,17 +28,17 @@ Write-Host "OK: Services ready" -ForegroundColor Green
 
 # Train
 Write-Host "`n[4/4] Training model..." -ForegroundColor Yellow
-docker exec ai_app python src/train_model.py
+docker-compose -f docker/docker-compose.yml exec -T ai_app python src/train_model.py
 Write-Host "OK: Training complete" -ForegroundColor Green
 
 # Validate
 Write-Host "`nValidating data..." -ForegroundColor Yellow
-docker exec ai_app python src/validate_data.py
+docker-compose -f docker/docker-compose.yml exec -T ai_app python src/validate_data.py
 Write-Host "OK: Validation complete" -ForegroundColor Green
 
 # Evaluate
 Write-Host "`nEvaluating robustness..." -ForegroundColor Yellow
-docker exec ai_app python src/evaluate_model.py
+docker-compose -f docker/docker-compose.yml exec -T ai_app python src/evaluate_model.py
 Write-Host "OK: Evaluation complete" -ForegroundColor Green
 
 # Done
