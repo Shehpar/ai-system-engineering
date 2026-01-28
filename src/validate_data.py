@@ -13,6 +13,7 @@ import pandas as pd
 import numpy as np
 import json
 import os
+import logging
 from datetime import datetime
 
 # Configuration
@@ -27,6 +28,13 @@ VALIDATION_RULES = {
 
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 class DataValidator:
     def __init__(self):
         self.validation_results = {
@@ -37,25 +45,23 @@ class DataValidator:
     
     def validate_schema(self, df):
         """Check required columns exist."""
-        print("\n🔍 SCHEMA VALIDATION")
-        print("-" * 40)
+        logger.info("SCHEMA VALIDATION")
         
         required_columns = ["cpu_usage", "memory_usage", "network_load"]
         missing = [col for col in required_columns if col not in df.columns]
         
         if missing:
-            print(f"❌ Missing columns: {missing}")
+            logger.error("Missing columns: %s", missing)
             self.validation_results["passed"] = False
             return False
         
-        print(f"✅ All required columns present: {required_columns}")
+        logger.info("All required columns present: %s", required_columns)
         self.validation_results["checks"]["schema"] = "PASSED"
         return True
     
     def validate_ranges(self, df):
         """Check values are within expected ranges."""
-        print("\n📏 RANGE VALIDATION")
-        print("-" * 40)
+        logger.info("RANGE VALIDATION")
         
         all_valid = True
         range_violations = {}
@@ -67,7 +73,7 @@ class DataValidator:
             below_min = df[col] < min_val
             if below_min.any():
                 count = below_min.sum()
-                print(f"⚠️  {col}: {count} values below {min_val}")
+                logger.warning("%s: %s values below %s", col, count, min_val)
                 range_violations[f"{col}_below_min"] = int(count)
                 all_valid = False
             
@@ -75,12 +81,12 @@ class DataValidator:
                 above_max = df[col] > max_val
                 if above_max.any():
                     count = above_max.sum()
-                    print(f"⚠️  {col}: {count} values above {max_val}")
+                    logger.warning("%s: %s values above %s", col, count, max_val)
                     range_violations[f"{col}_above_max"] = int(count)
                     all_valid = False
         
         if all_valid:
-            print("✅ All values within expected ranges")
+            logger.info("All values within expected ranges")
             self.validation_results["checks"]["ranges"] = "PASSED"
         else:
             self.validation_results["checks"]["ranges"] = {
@@ -92,20 +98,19 @@ class DataValidator:
     
     def validate_missing_values(self, df):
         """Check for null values."""
-        print("\n⚠️  MISSING VALUE VALIDATION")
-        print("-" * 40)
+        logger.info("MISSING VALUE VALIDATION")
         
         missing_counts = df.isnull().sum()
         total_missing = missing_counts.sum()
         
         if total_missing == 0:
-            print("✅ No missing values detected")
+            logger.info("No missing values detected")
             self.validation_results["checks"]["missing_values"] = "PASSED"
             return True
         else:
-            print(f"❌ Found {total_missing} missing values:")
+            logger.error("Found %s missing values:", total_missing)
             for col, count in missing_counts[missing_counts > 0].items():
-                print(f"  {col}: {count}")
+                logger.error("%s: %s", col, count)
             self.validation_results["passed"] = False
             self.validation_results["checks"]["missing_values"] = {
                 "status": "FAILED",
@@ -115,17 +120,16 @@ class DataValidator:
     
     def validate_duplicates(self, df):
         """Check for duplicate rows."""
-        print("\n🔄 DUPLICATE VALIDATION")
-        print("-" * 40)
+        logger.info("DUPLICATE VALIDATION")
         
         duplicates = df.duplicated().sum()
         
         if duplicates == 0:
-            print("✅ No duplicate rows detected")
+            logger.info("No duplicate rows detected")
             self.validation_results["checks"]["duplicates"] = "PASSED"
             return True
         else:
-            print(f"⚠️  Found {duplicates} duplicate rows ({duplicates/len(df)*100:.2f}%)")
+            logger.warning("Found %s duplicate rows (%.2f%%)", duplicates, duplicates / len(df) * 100)
             if duplicates / len(df) > 0.1:  # Fail if >10% duplicates
                 self.validation_results["passed"] = False
                 self.validation_results["checks"]["duplicates"] = {
@@ -144,8 +148,7 @@ class DataValidator:
     
     def validate_statistics(self, df):
         """Validate statistical properties."""
-        print("\n📊 STATISTICAL VALIDATION")
-        print("-" * 40)
+        logger.info("STATISTICAL VALIDATION")
         
         stats = {}
         for col in ["cpu_usage", "memory_usage", "network_load"]:
@@ -158,22 +161,27 @@ class DataValidator:
                 "q75": float(df[col].quantile(0.75))
             }
             stats[col] = col_stats
-            print(f"{col}: μ={col_stats['mean']:.2f}, σ={col_stats['std']:.2f}, "
-                  f"range=[{col_stats['min']:.2f}, {col_stats['max']:.2f}]")
+            logger.info(
+                "%s: mean=%.2f, std=%.2f, range=[%.2f, %.2f]",
+                col,
+                col_stats["mean"],
+                col_stats["std"],
+                col_stats["min"],
+                col_stats["max"]
+            )
         
         self.validation_results["checks"]["statistics"] = stats
         self.validation_results["checks"]["sample_count"] = len(df)
         
         # Warn if very small dataset
         if len(df) < 30:
-            print(f"⚠️  Only {len(df)} samples. Recommend at least 30 for training.")
+            logger.warning("Only %s samples. Recommend at least 30 for training.", len(df))
         
         return True
     
     def validate_outliers(self, df):
         """Detect statistical outliers using IQR method."""
-        print("\n🎯 OUTLIER DETECTION (IQR Method)")
-        print("-" * 40)
+        logger.info("OUTLIER DETECTION (IQR Method)")
         
         outlier_summary = {}
         total_outliers = 0
@@ -197,13 +205,13 @@ class DataValidator:
             }
             
             if outliers > 0:
-                print(f"⚠️  {col}: {outliers} outliers ({outlier_ratio*100:.2f}%)")
+                logger.warning("%s: %s outliers (%.2f%%)", col, outliers, outlier_ratio * 100)
         
         if total_outliers == 0:
-            print("✅ No statistical outliers detected")
+            logger.info("No statistical outliers detected")
             self.validation_results["checks"]["outliers"] = "PASSED"
         else:
-            print(f"ℹ️  Total: {total_outliers} outliers in dataset")
+            logger.info("Total: %s outliers in dataset", total_outliers)
             self.validation_results["checks"]["outliers"] = outlier_summary
         
         return True
@@ -220,7 +228,7 @@ class DataValidator:
         with open(os.path.join(RESULTS_DIR, "validation_report_latest.json"), 'w') as f:
             json.dump(self.validation_results, f, indent=2)
         
-        print(f"\n✅ Validation report saved: {report_path}")
+        logger.info("Validation report saved: %s", report_path)
         return self.validation_results["passed"]
 
 def validate_live_data(cpu, mem, net):
@@ -237,17 +245,15 @@ def validate_live_data(cpu, mem, net):
     return len(issues) == 0, issues
 
 def main():
-    print("=" * 60)
-    print("📋 DATA VALIDATION")
-    print("=" * 60)
+    logger.info("DATA VALIDATION")
     
     try:
         if not os.path.exists(HISTORICAL_DATA_PATH):
-            print(f"❌ Data file not found: {HISTORICAL_DATA_PATH}")
+            logger.error("Data file not found: %s", HISTORICAL_DATA_PATH)
             return False
         
         df = pd.read_csv(HISTORICAL_DATA_PATH)
-        print(f"\n✅ Loaded {len(df)} samples from {HISTORICAL_DATA_PATH}")
+        logger.info("Loaded %s samples from %s", len(df), HISTORICAL_DATA_PATH)
         
         validator = DataValidator()
         
@@ -262,17 +268,15 @@ def main():
         # Save report
         passed = validator.save_validation_report()
         
-        print("\n" + "=" * 60)
         if passed:
-            print("✅ DATA VALIDATION PASSED - Safe to use for training")
+            logger.info("DATA VALIDATION PASSED - Safe to use for training")
         else:
-            print("❌ DATA VALIDATION FAILED - Review report and fix issues")
-        print("=" * 60)
+            logger.error("DATA VALIDATION FAILED - Review report and fix issues")
         
         return passed
         
     except Exception as e:
-        print(f"\n❌ Validation error: {e}")
+        logger.exception("Validation error: %s", e)
         raise
 
 if __name__ == "__main__":

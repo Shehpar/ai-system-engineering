@@ -14,6 +14,7 @@ import joblib
 import json
 import os
 import time
+import logging
 from datetime import datetime
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import (
@@ -22,6 +23,13 @@ from sklearn.metrics import (
 )
 import warnings
 warnings.filterwarnings('ignore')
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -45,7 +53,7 @@ class ModelEvaluator:
         
         self.model = joblib.load(MODEL_PATH)
         self.scaler = joblib.load(SCALER_PATH)
-        print("✅ Model and scaler loaded successfully")
+        logger.info("Model and scaler loaded successfully")
     
     def load_test_data(self):
         """Load and prepare test data."""
@@ -57,14 +65,12 @@ class ModelEvaluator:
         X_test = df[features].iloc[-test_size:].values
         
         X_test_scaled = self.scaler.transform(X_test)
-        print(f"✅ Loaded {len(X_test)} test samples")
+        logger.info("Loaded %s test samples", len(X_test))
         return X_test, X_test_scaled
     
     def evaluate_base(self, X_test, X_test_scaled):
         """Evaluate model on clean test data."""
-        print("\n" + "=" * 60)
-        print("📊 BASELINE EVALUATION (Clean Test Data)")
-        print("=" * 60)
+        logger.info("BASELINE EVALUATION (Clean Test Data)")
         
         # Predictions
         y_pred = self.model.predict(X_test_scaled)
@@ -92,19 +98,16 @@ class ModelEvaluator:
         
         conf_matrix = confusion_matrix(y_true, y_pred_binary)
         
-        print(f"Precision: {precision:.4f}")
-        print(f"Recall: {recall:.4f}")
-        print(f"F1-Score: {f1:.4f}")
-        print(f"ROC-AUC: {roc_auc:.4f}")
-        print(f"Anomalies detected: {np.sum(y_pred_binary)}/{len(X_test)}")
-        print(f"Confusion Matrix:\n{conf_matrix}")
+        logger.info("Precision=%.4f, Recall=%.4f, F1=%.4f, ROC-AUC=%.4f", precision, recall, f1, roc_auc)
+        logger.info("Anomalies detected: %s/%s", np.sum(y_pred_binary), len(X_test))
+        logger.info("Confusion Matrix: %s", conf_matrix)
         
         # Latency test
         start = time.time()
         for _ in range(100):
             self.model.predict(X_test_scaled[:1])
         latency_ms = (time.time() - start) / 100 * 1000
-        print(f"Prediction latency (avg): {latency_ms:.2f} ms")
+        logger.info("Prediction latency (avg): %.2f ms", latency_ms)
         
         self.results["baseline"] = {
             "precision": float(precision),
@@ -120,9 +123,7 @@ class ModelEvaluator:
     
     def test_noise_robustness(self, X_test, X_test_scaled):
         """Test model robustness to feature noise."""
-        print("\n" + "=" * 60)
-        print("🔧 ROBUSTNESS TEST 1: Gaussian Noise Injection")
-        print("=" * 60)
+        logger.info("ROBUSTNESS TEST 1: Gaussian Noise Injection")
         
         noise_levels = [0.01, 0.05, 0.1]
         results = {}
@@ -135,7 +136,7 @@ class ModelEvaluator:
             y_pred_binary = (y_pred == -1).astype(int)
             
             anomaly_ratio = np.sum(y_pred_binary) / len(X_test)
-            print(f"Noise σ={noise_level}: {np.sum(y_pred_binary)} anomalies detected ({anomaly_ratio:.2%})")
+            logger.info("Noise σ=%s: %s anomalies detected (%.2f%%)", noise_level, np.sum(y_pred_binary), anomaly_ratio * 100)
             
             results[f"noise_sigma_{noise_level}"] = {
                 "anomalies_detected": int(np.sum(y_pred_binary)),
@@ -146,9 +147,7 @@ class ModelEvaluator:
     
     def test_missing_data(self, X_test, X_test_scaled):
         """Test model robustness to missing features."""
-        print("\n" + "=" * 60)
-        print("🔧 ROBUSTNESS TEST 2: Missing Feature Values")
-        print("=" * 60)
+        logger.info("ROBUSTNESS TEST 2: Missing Feature Values")
         
         feature_names = ["cpu_usage", "memory_usage", "network_load"]
         results = {}
@@ -163,7 +162,7 @@ class ModelEvaluator:
             y_pred_binary = (y_pred == -1).astype(int)
             
             anomaly_ratio = np.sum(y_pred_binary) / len(X_test)
-            print(f"Missing {feature_name}: {np.sum(y_pred_binary)} anomalies detected ({anomaly_ratio:.2%})")
+            logger.info("Missing %s: %s anomalies detected (%.2f%%)", feature_name, np.sum(y_pred_binary), anomaly_ratio * 100)
             
             results[f"missing_{feature_name}"] = {
                 "anomalies_detected": int(np.sum(y_pred_binary)),
@@ -174,9 +173,7 @@ class ModelEvaluator:
     
     def test_outlier_robustness(self, X_test, X_test_scaled):
         """Test model sensitivity to extreme outliers."""
-        print("\n" + "=" * 60)
-        print("🔧 ROBUSTNESS TEST 3: Extreme Outlier Injection")
-        print("=" * 60)
+        logger.info("ROBUSTNESS TEST 3: Extreme Outlier Injection")
         
         outlier_magnitudes = [2, 5, 10]
         results = {}
@@ -195,8 +192,13 @@ class ModelEvaluator:
             outliers_flagged = np.sum(y_pred_binary[outlier_indices])
             anomaly_ratio = np.sum(y_pred_binary) / len(X_test)
             
-            print(f"Magnitude {magnitude}x: {np.sum(y_pred_binary)} total, "
-                  f"{outliers_flagged} outliers detected ({anomaly_ratio:.2%})")
+            logger.info(
+                "Magnitude %sx: %s total, %s outliers detected (%.2f%%)",
+                magnitude,
+                np.sum(y_pred_binary),
+                outliers_flagged,
+                anomaly_ratio * 100
+            )
             
             results[f"magnitude_{magnitude}x"] = {
                 "total_anomalies": int(np.sum(y_pred_binary)),
@@ -208,9 +210,7 @@ class ModelEvaluator:
     
     def test_distribution_shift(self, X_test, X_test_scaled):
         """Test model sensitivity to shifted feature distributions."""
-        print("\n" + "=" * 60)
-        print("🔧 ROBUSTNESS TEST 4: Distribution Shift")
-        print("=" * 60)
+        logger.info("ROBUSTNESS TEST 4: Distribution Shift")
         
         shifts = [0.1, 0.5, 1.0]
         results = {}
@@ -223,7 +223,7 @@ class ModelEvaluator:
             y_pred_binary = (y_pred == -1).astype(int)
             
             anomaly_ratio = np.sum(y_pred_binary) / len(X_test)
-            print(f"Shift +{shift}: {np.sum(y_pred_binary)} anomalies detected ({anomaly_ratio:.2%})")
+            logger.info("Shift +%s: %s anomalies detected (%.2f%%)", shift, np.sum(y_pred_binary), anomaly_ratio * 100)
             
             results[f"shift_{shift}"] = {
                 "anomalies_detected": int(np.sum(y_pred_binary)),
@@ -244,12 +244,10 @@ class ModelEvaluator:
         with open(os.path.join(RESULTS_DIR, "evaluation_report_latest.json"), 'w') as f:
             json.dump(self.results, f, indent=2)
         
-        print(f"\n✅ Evaluation report saved: {report_path}")
+        logger.info("Evaluation report saved: %s", report_path)
 
 def main():
-    print("=" * 60)
-    print("🔬 MODEL EVALUATION & ROBUSTNESS TESTING")
-    print("=" * 60)
+    logger.info("MODEL EVALUATION & ROBUSTNESS TESTING")
     
     try:
         evaluator = ModelEvaluator()
@@ -269,12 +267,10 @@ def main():
         # Save report
         evaluator.save_evaluation_report()
         
-        print("\n" + "=" * 60)
-        print("✅ EVALUATION COMPLETED SUCCESSFULLY")
-        print("=" * 60)
+        logger.info("EVALUATION COMPLETED SUCCESSFULLY")
         
     except Exception as e:
-        print(f"\n❌ Evaluation failed: {e}")
+        logger.exception("Evaluation failed: %s", e)
         raise
 
 if __name__ == "__main__":

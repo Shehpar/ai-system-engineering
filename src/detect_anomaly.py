@@ -5,6 +5,7 @@ from influxdb import InfluxDBClient
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler 
 import os
+import logging
 from datetime import datetime
 
 # --- 1. CONFIGURATION ---
@@ -16,6 +17,13 @@ HISTORICAL_DATA_PATH = os.path.join(BASE_DIR, "data/processed/system_metrics_pro
 # Ensure directories exist
 os.makedirs(os.path.join(BASE_DIR, "models"), exist_ok=True)
 os.makedirs(os.path.join(BASE_DIR, "data/processed"), exist_ok=True)
+
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 # InfluxDB connection
 try:
@@ -109,22 +117,22 @@ def fetch_live_logs():
             return pd.DataFrame()
             
     except Exception as e:
-        print(f"Database error: {e}")
+        logger.warning("Database error: %s", e)
         return pd.DataFrame()
 
 # --- 2. THE MAIN SYNC PIPELINE ---
 def run_pipeline():
-    print("AI Brain: Initializing Non-Stop Monitoring...")
+    logger.info("Initializing non-stop monitoring...")
     features = ["cpu_usage", "memory_usage", "network_load"]
     
     # STEP 1: PRE-LOAD BRAIN (The "Detector")
     try:
         model = joblib.load(MODEL_PATH)
         scaler = joblib.load(SCALER_PATH)
-        print("✅ Pre-trained model found! Starting detection immediately.")
+        logger.info("Pre-trained model found. Starting detection immediately.")
         ai_is_ready = True
     except:
-        print("⚠️ No model found. Detection will start after initial training.")
+        logger.warning("No model found. Detection will start after initial training.")
         ai_is_ready = False
 
     last_retrain_time = time.time()
@@ -180,13 +188,13 @@ def run_pipeline():
 
                 ai_is_ready = True
                 last_retrain_time = time.time()
-                print(f"[{time.strftime('%H:%M:%S')}] 🔄 Model retrained with {len(updated_memory)} samples")
+                logger.info("Model retrained with %s samples", len(updated_memory))
 
             status_txt = "ANOMALY!!" if ai_status else "Normal"
-            print(f"[{time.strftime('%H:%M:%S')}] Monitoring Synced. Status: {status_txt}")
+            logger.info("Monitoring synced. Status: %s", status_txt)
 
         else:
-            print(f"[{time.strftime('%H:%M:%S')}] Waiting for Site B metrics...")
+            logger.info("Waiting for Site B metrics...")
 
         time.sleep(10)
 

@@ -13,6 +13,7 @@ import numpy as np
 import joblib
 import json
 import os
+import logging
 from datetime import datetime
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
@@ -24,13 +25,20 @@ from sklearn.metrics import (
 import warnings
 warnings.filterwarnings('ignore')
 
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 try:
     import mlflow
     from mlflow.models.signature import infer_signature
     MLFLOW_AVAILABLE = True
 except ImportError:
     MLFLOW_AVAILABLE = False
-    print("⚠️ MLflow not available. Install with: pip install mlflow")
+    logger.warning("MLflow not available. Install with: pip install mlflow")
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -49,7 +57,7 @@ def load_data():
         raise FileNotFoundError(f"Data file not found: {HISTORICAL_DATA_PATH}")
     
     df = pd.read_csv(HISTORICAL_DATA_PATH)
-    print(f"✅ Loaded {len(df)} samples from {HISTORICAL_DATA_PATH}")
+    logger.info("Loaded %s samples from %s", len(df), HISTORICAL_DATA_PATH)
     return df
 
 def split_data(df, test_size=0.15, val_size=0.15, random_state=42):
@@ -70,7 +78,7 @@ def split_data(df, test_size=0.15, val_size=0.15, random_state=42):
         random_state=random_state
     )
     
-    print(f"📊 Data split: train={len(X_train)}, val={len(X_val)}, test={len(X_test)}")
+    logger.info("Data split: train=%s, val=%s, test=%s", len(X_train), len(X_val), len(X_test))
     return X_train, X_val, X_test
 
 def grid_search(X_train, contaminations=[0.01, 0.05, 0.1], 
@@ -79,7 +87,7 @@ def grid_search(X_train, contaminations=[0.01, 0.05, 0.1],
     Grid search for best hyperparameters using validation set.
     Returns: best_params, best_f1, results_log
     """
-    print("\n🔍 Starting hyperparameter grid search...")
+    logger.info("Starting hyperparameter grid search...")
     
     scaler = StandardScaler()
     X_train_scaled = scaler.fit_transform(X_train)
@@ -92,7 +100,7 @@ def grid_search(X_train, contaminations=[0.01, 0.05, 0.1],
     
     for contamination in contaminations:
         for n_estimators in n_estimators_list:
-            print(f"  Testing: contamination={contamination}, n_estimators={n_estimators}")
+            logger.info("Testing: contamination=%s, n_estimators=%s", contamination, n_estimators)
             
             model = IsolationForest(
                 contamination=contamination,
@@ -125,12 +133,12 @@ def grid_search(X_train, contaminations=[0.01, 0.05, 0.1],
                         "n_estimators": n_estimators
                     }
     
-    print(f"✅ Best params: {best_params}")
+    logger.info("Best params: %s", best_params)
     return best_model, best_scaler, best_params, results
 
 def train_and_evaluate(X_train, X_val, X_test):
     """Train model and evaluate on validation and test sets."""
-    print("\n🚀 Training phase...")
+    logger.info("Training phase started")
     
     # Data validation
     assert X_train.shape[1] == 3, "Expected 3 features"
@@ -179,11 +187,8 @@ def train_and_evaluate(X_train, X_val, X_test):
         "grid_search_results": grid_results
     }
     
-    print(f"\n📈 Test Set Metrics:")
-    print(f"  Precision: {precision:.4f}")
-    print(f"  Recall: {recall:.4f}")
-    print(f"  F1-Score: {f1:.4f}")
-    print(f"  Confusion Matrix:\n{conf_matrix}")
+    logger.info("Test Set Metrics: Precision=%.4f, Recall=%.4f, F1=%.4f", precision, recall, f1)
+    logger.info("Confusion Matrix: %s", conf_matrix)
     
     return model, scaler, metrics, class_report
 
@@ -206,17 +211,16 @@ def save_model_version(model, scaler, metrics):
     with open(metrics_path, 'w') as f:
         json.dump(metrics, f, indent=2)
     
-    print(f"\n💾 Model saved:")
-    print(f"  - {model_path}")
-    print(f"  - {scaler_path}")
-    print(f"  - {metrics_path}")
+    logger.info("Model saved: %s", model_path)
+    logger.info("Scaler saved: %s", scaler_path)
+    logger.info("Metrics saved: %s", metrics_path)
     
     return model_path, scaler_path, metrics_path
 
 def log_to_mlflow(model, scaler, X_test_scaled, metrics, class_report):
     """Log training run to MLflow."""
     if not MLFLOW_AVAILABLE:
-        print("⚠️ MLflow logging skipped (mlflow not installed)")
+        logger.warning("MLflow logging skipped (mlflow not installed)")
         return
     
     try:
@@ -251,15 +255,13 @@ def log_to_mlflow(model, scaler, X_test_scaled, metrics, class_report):
                 json.dump(metrics, f, indent=2)
             mlflow.log_artifact(metrics_path)
             
-            print(f"✅ MLflow run logged: {mlflow.current_run().info.run_id}")
+            logger.info("MLflow run logged: %s", mlflow.current_run().info.run_id)
     
     except Exception as e:
-        print(f"⚠️ MLflow logging failed: {e}")
+        logger.warning("MLflow logging failed: %s", e)
 
 def main():
-    print("=" * 60)
-    print("🤖 OFFLINE MODEL TRAINING - ANOMALY DETECTION")
-    print("=" * 60)
+    logger.info("OFFLINE MODEL TRAINING - ANOMALY DETECTION")
     
     try:
         # Load data
@@ -278,12 +280,10 @@ def main():
         X_test_scaled = scaler.transform(X_test)
         log_to_mlflow(model, scaler, X_test_scaled, metrics, class_report)
         
-        print("\n" + "=" * 60)
-        print("✅ TRAINING COMPLETED SUCCESSFULLY")
-        print("=" * 60)
+        logger.info("TRAINING COMPLETED SUCCESSFULLY")
         
     except Exception as e:
-        print(f"\n❌ Training failed: {e}")
+        logger.exception("Training failed: %s", e)
         raise
 
 if __name__ == "__main__":
