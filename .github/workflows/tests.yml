@@ -1,0 +1,141 @@
+name: Automated Testing & Quality Assurance
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'ai-infrastructure-anomaly-detection/src/**'
+      - 'ai-infrastructure-anomaly-detection/tests/**'
+      - 'ai-infrastructure-anomaly-detection/requirements.txt'
+      - '.github/workflows/tests.yml'
+  pull_request:
+    branches: [ main, master ]
+    paths:
+      - 'ai-infrastructure-anomaly-detection/src/**'
+      - 'ai-infrastructure-anomaly-detection/tests/**'
+      - 'ai-infrastructure-anomaly-detection/requirements.txt'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      working-directory: ./ai-infrastructure-anomaly-detection
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run unit tests with pytest
+      working-directory: ./ai-infrastructure-anomaly-detection
+      run: |
+        pytest tests/ -v --tb=short --color=yes
+    
+    - name: Check code syntax with Python
+      working-directory: ./ai-infrastructure-anomaly-detection
+      run: |
+        python -m py_compile src/*.py tests/*.py
+    
+    - name: Run data validation
+      working-directory: ./ai-infrastructure-anomaly-detection
+      run: |
+        python src/validate_data.py
+    
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results-py${{ matrix.python-version }}
+        path: ai-infrastructure-anomaly-detection/results/
+    
+    - name: Test summary
+      if: always()
+      run: |
+        echo "✅ Tests completed on Python ${{ matrix.python-version }}"
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+    
+    - name: Build Docker image
+      working-directory: ./ai-infrastructure-anomaly-detection
+      run: |
+        docker build -f docker/Dockerfile -t ai-anomaly-detector:latest .
+    
+    - name: Test Docker image
+      working-directory: ./ai-infrastructure-anomaly-detection
+      run: |
+        docker run --rm ai-anomaly-detector:latest python -c "import src.train_model; print('Docker build successful')"
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install linting tools
+      run: |
+        pip install pylint
+    
+    - name: Run pylint (non-blocking)
+      working-directory: ./ai-infrastructure-anomaly-detection
+      continue-on-error: true
+      run: |
+        pylint src/ --disable=R,C --fail-under=7 || true
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install security scanner
+      run: pip install safety bandit
+    
+    - name: Check dependencies for vulnerabilities
+      working-directory: ./ai-infrastructure-anomaly-detection
+      continue-on-error: true
+      run: |
+        safety check --requirements requirements.txt --json || true
+    
+    - name: Scan code for security issues
+      working-directory: ./ai-infrastructure-anomaly-detection
+      continue-on-error: true
+      run: |
+        bandit -r src/ -f json -o bandit-report.json || true
