@@ -3,3 +3,5 @@ numpy
 joblib
 scikit-learn==1.8.0
 influxdb
+mlflow>=2.0.0
+scipy
