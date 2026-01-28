@@ -8,13 +8,14 @@ import os
 from datetime import datetime
 
 # --- 1. CONFIGURATION ---
-MODEL_PATH = "models/anomaly_model.pkl"
-SCALER_PATH = "models/scaler.pkl"
-HISTORICAL_DATA_PATH = "data/processed/system_metrics_processed.csv"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODEL_PATH = os.path.join(BASE_DIR, "models/anomaly_model.pkl")
+SCALER_PATH = os.path.join(BASE_DIR, "models/scaler.pkl")
+HISTORICAL_DATA_PATH = os.path.join(BASE_DIR, "data/processed/system_metrics_processed.csv")
 
 # Ensure directories exist
-os.makedirs("models", exist_ok=True)
-os.makedirs("data/processed", exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "models"), exist_ok=True)
+os.makedirs(os.path.join(BASE_DIR, "data/processed"), exist_ok=True)
 
 # InfluxDB connection
 try:
