@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-anomaly-detector
+  labels:
+    app: anomaly-detector
+    tier: ml-service
+    version: v1.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: anomaly-detector
+  template:
+    metadata:
+      labels:
+        app: anomaly-detector
+        tier: ml-service
+        version: v1.0.0
+    spec:
+      containers:
+      - name: anomaly-detector
+        image: ai-anomaly-detector:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 5000
+          name: http
+          protocol: TCP
+        env:
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: anomaly-detector-config
+              key: log_level
+        - name: INFLUXDB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: anomaly-detector-config
+              key: influxdb_host
+        - name: INFLUXDB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: anomaly-detector-config
+              key: influxdb_port
+        - name: INFLUXDB_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: anomaly-detector-config
+              key: influxdb_database
+        - name: INFLUXDB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: anomaly-detector-secrets
+              key: influxdb_password
+        - name: MLFLOW_TRACKING_URI
+          valueFrom:
+            configMapKeyRef:
+              name: anomaly-detector-config
+              key: mlflow_tracking_uri
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 5000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        volumeMounts:
+        - name: model-storage
+          mountPath: /app/models
+        - name: data-storage
+          mountPath: /app/data
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-pvc
+      - name: data-storage
+        persistentVolumeClaim:
+          claimName: data-pvc
+      restartPolicy: Always
