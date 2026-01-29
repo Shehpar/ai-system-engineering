@@ -1,0 +1,26 @@
+services:
+  # Stress test container - generates CPU/memory load
+  stress-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: stress_test_container
+    # Light resource limits for safe testing
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    environment:
+      - PYTHONUNBUFFERED=1
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Run in foreground so you can see output in Docker Desktop
+    stdin_open: true
+    tty: true
