@@ -3,10 +3,7 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
+        "datasource": "-- Grafana --",
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -19,15 +16,12 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
+  "id": null,
   "links": [],
   "liveNow": true,
   "panels": [
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
+      "datasource": "InfluxDB",
       "description": "Real-time CPU and Memory usage trends",
       "fieldConfig": {
         "defaults": {
@@ -35,17 +29,52 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
             }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
           }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
         "x": 0,
         "y": 0
@@ -53,54 +82,83 @@
       "id": 1,
       "options": {
         "legend": {
+          "calcs": ["mean", "max"],
           "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
+          "placement": "right"
         },
         "tooltip": {
-          "mode": "multi",
-          "sort": "none"
+          "mode": "multi"
         }
       },
+      "pluginVersion": "10.0.0",
       "targets": [
         {
           "alias": "CPU Usage %",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
-          },
-          "query": "SELECT (100 - usage_idle) as cpu_usage FROM cpu WHERE $timeFilter",
-          "refId": "A"
+          "datasource": "InfluxDB",
+          "refId": "A",
+          "query": "SELECT (100 - mean(usage_idle)) as cpu_usage FROM cpu WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
         },
         {
           "alias": "Memory Usage %",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
-          },
-          "query": "SELECT used_percent as mem_usage FROM mem WHERE $timeFilter",
-          "refId": "B"
+          "datasource": "InfluxDB",
+          "refId": "B",
+          "query": "SELECT mean(used_percent) as mem_usage FROM mem WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
         }
       ],
       "title": "System Metrics - CPU & Memory",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
-      "description": "Network traffic analysis",
+      "datasource": "InfluxDB",
+      "description": "Network traffic analysis in bytes per second",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Bytes/sec",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
           }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 12,
         "x": 12,
         "y": 0
@@ -108,42 +166,34 @@
       "id": 2,
       "options": {
         "legend": {
+          "calcs": ["mean", "max"],
           "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
+          "placement": "right"
         },
         "tooltip": {
           "mode": "multi"
         }
       },
+      "pluginVersion": "10.0.0",
       "targets": [
         {
           "alias": "Network In (Bytes/s)",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
-          },
-          "query": "SELECT non_negative_derivative(mean(bytes_recv), 1s) FROM net WHERE $timeFilter GROUP BY time($__interval) FILL(null)",
-          "refId": "A"
+          "datasource": "InfluxDB",
+          "refId": "A",
+          "query": "SELECT mean(bytes_recv) as bytes_in FROM net WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
         },
         {
           "alias": "Network Out (Bytes/s)",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
-          },
-          "query": "SELECT non_negative_derivative(mean(bytes_sent), 1s) FROM net WHERE $timeFilter GROUP BY time($__interval) FILL(null)",
-          "refId": "B"
+          "datasource": "InfluxDB",
+          "refId": "B",
+          "query": "SELECT mean(bytes_sent) as bytes_out FROM net WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
         }
       ],
       "title": "Network Traffic Analysis",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
+      "datasource": "InfluxDB",
       "description": "Real-time anomaly predictions from ML model",
       "fieldConfig": {
         "defaults": {
@@ -151,15 +201,46 @@
             "mode": "thresholds"
           },
           "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
             "fillOpacity": 70,
-            "lineWidth": 2
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
+          "mappings": [],
+          "max": 1,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
               },
               {
                 "color": "red",
@@ -171,41 +252,36 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 8,
         "x": 0,
-        "y": 9
+        "y": 8
       },
       "id": 3,
       "options": {
         "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
         },
         "tooltip": {
           "mode": "multi"
         }
       },
+      "pluginVersion": "10.0.0",
       "targets": [
         {
-          "alias": "Anomaly (0=Normal, 1=Anomaly)",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
-          },
-          "query": "SELECT is_anomaly FROM ai_predictions WHERE $timeFilter",
-          "refId": "A"
+          "alias": "Anomaly Flag",
+          "datasource": "InfluxDB",
+          "refId": "A",
+          "query": "SELECT mean(is_anomaly) as anomaly_flag FROM ai_predictions WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
         }
       ],
-      "title": "Real-Time Anomaly Predictions",
+      "title": "Real-Time Anomaly Predictions (0=Normal, 1=Anomaly)",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
+      "datasource": "InfluxDB",
       "description": "Model inference latency in milliseconds",
       "fieldConfig": {
         "defaults": {
@@ -213,185 +289,121 @@
             "mode": "palette-classic"
           },
           "custom": {
-            "fillOpacity": 70,
-            "lineWidth": 2
-          },
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 8,
-        "x": 8,
-        "y": 9
-      },
-      "id": 4,
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "targets": [
-        {
-          "alias": "Prediction Latency (ms)",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
-          },
-          "query": "SELECT prediction_latency_ms FROM ai_predictions WHERE $timeFilter",
-          "refId": "A"
-        }
-      ],
-      "title": "Prediction Latency (Target: <5s)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
-      "description": "Anomaly score from ML model (0=Normal, 1=Anomaly)",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "fillOpacity": 70,
-            "lineWidth": 2
-          },
-          "max": 1,
-          "min": -1
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 8,
-        "x": 16,
-        "y": 9
-      },
-      "id": 5,
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "targets": [
-        {
-          "alias": "Anomaly Score",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
-          },
-          "query": "SELECT anomaly_score FROM ai_predictions WHERE $timeFilter",
-          "refId": "A"
-        }
-      ],
-      "title": "Anomaly Score Distribution",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
-      "description": "Count of anomalies detected over time (throughput)",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
+            "axisLabel": "Latency (ms)",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
             "hideFrom": {
+              "legend": false,
               "tooltip": false,
-              "viz": false,
-              "legend": false
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
             }
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 18
-      },
-      "id": 6,
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "targets": [
-        {
-          "alias": "Anomalies Detected",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
           },
-          "query": "SELECT count(is_anomaly) FROM ai_predictions WHERE is_anomaly=1 AND $timeFilter GROUP BY time(1m) FILL(0)",
-          "refId": "A"
-        }
-      ],
-      "title": "Anomaly Detection Throughput (Anomalies/Minute)",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
-      "description": "Data drift detection indicator",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "green",
-                  "index": 1,
-                  "text": "No Drift"
-                },
-                "1": {
-                  "color": "red",
-                  "index": 0,
-                  "text": "Drift Detected!"
-                }
-              },
-              "type": "value"
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": null
-              },
+              }
+            ]
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 8
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "alias": "Prediction Latency (ms)",
+          "datasource": "InfluxDB",
+          "refId": "A",
+          "query": "SELECT mean(prediction_latency_ms) as latency FROM ai_predictions WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+        }
+      ],
+      "title": "Prediction Latency (Target: <5ms)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "InfluxDB",
+      "description": "Anomaly score distribution from ML model",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Score",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 1,
+          "min": -1,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
               {
-                "color": "red",
-                "value": 1
+                "color": "green",
+                "value": null
               }
             ]
           }
@@ -399,108 +411,282 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 18
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 8
       },
-      "id": 7,
+      "id": 5,
       "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "textMode": "auto",
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
         "tooltip": {
-          "mode": "single",
-          "sort": "none"
+          "mode": "multi"
         }
       },
+      "pluginVersion": "10.0.0",
       "targets": [
         {
-          "alias": "Data Drift Status (0=No, 1=Yes)",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
-          },
-          "query": "SELECT last(drift_detected) FROM model_health WHERE $timeFilter",
-          "refId": "A"
+          "alias": "Anomaly Score",
+          "datasource": "InfluxDB",
+          "refId": "A",
+          "query": "SELECT mean(anomaly_score) as score FROM ai_predictions WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
         }
       ],
-      "title": "Data Drift Indicator (KS-Test)",
-      "type": "stat"
+      "title": "Anomaly Score Distribution",
+      "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "influxdb"
-      },
-      "description": "Model performance metrics over time",
+      "datasource": "InfluxDB",
+      "description": "Count of anomalies detected over time",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
           "custom": {
+            "axisLabel": "Count",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "bars",
             "fillOpacity": 70,
-            "lineWidth": 2
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
-          "max": 1,
-          "min": 0
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 9,
-        "w": 24,
+        "h": 8,
+        "w": 12,
         "x": 0,
-        "y": 27
+        "y": 16
       },
-      "id": 8,
+      "id": 6,
       "options": {
         "legend": {
+          "calcs": ["sum", "mean"],
           "displayMode": "table",
-          "placement": "right",
-          "showLegend": true
+          "placement": "right"
         },
         "tooltip": {
           "mode": "multi"
         }
       },
+      "pluginVersion": "10.0.0",
       "targets": [
         {
-          "alias": "Precision",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
-          },
-          "query": "SELECT precision FROM model_metrics WHERE $timeFilter",
-          "refId": "A"
-        },
-        {
-          "alias": "Recall",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
-          },
-          "query": "SELECT recall FROM model_metrics WHERE $timeFilter",
-          "refId": "B"
-        },
-        {
-          "alias": "F1-Score",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "influxdb"
-          },
-          "query": "SELECT f1_score FROM model_metrics WHERE $timeFilter",
-          "refId": "C"
+          "alias": "Anomalies Detected",
+          "datasource": "InfluxDB",
+          "refId": "A",
+          "query": "SELECT count(is_anomaly) FROM ai_predictions WHERE is_anomaly=1 AND \$timeFilter GROUP BY time(1m) FILL(0)"
         }
       ],
-      "title": "Model Performance Metrics (Precision, Recall, F1)",
+      "title": "Anomaly Detection Throughput (Anomalies/Minute)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "InfluxDB",
+      "description": "Anomaly count trend - drift indicator",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Count",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max"],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "alias": "Anomaly Trend (Drift Indicator)",
+          "datasource": "InfluxDB",
+          "refId": "A",
+          "query": "SELECT count(is_anomaly) FROM ai_predictions WHERE \$timeFilter GROUP BY time(5m) FILL(0)"
+        }
+      ],
+      "title": "Anomaly Trend (Data Drift Indicator)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "InfluxDB",
+      "description": "System performance and anomaly detection rate overview",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "Value",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": ["mean", "max", "last"],
+          "displayMode": "table",
+          "placement": "right"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "pluginVersion": "10.0.0",
+      "targets": [
+        {
+          "alias": "Avg CPU Usage %",
+          "datasource": "InfluxDB",
+          "refId": "A",
+          "query": "SELECT (100 - mean(usage_idle)) as avg_cpu FROM cpu WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+        },
+        {
+          "alias": "Avg Memory Usage %",
+          "datasource": "InfluxDB",
+          "refId": "B",
+          "query": "SELECT mean(used_percent) as avg_mem FROM mem WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+        },
+        {
+          "alias": "Network Throughput (Bytes/s)",
+          "datasource": "InfluxDB",
+          "refId": "C",
+          "query": "SELECT (mean(bytes_sent) + mean(bytes_recv)) as total_throughput FROM net WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+        }
+      ],
+      "title": "System Performance Overview",
       "type": "timeseries"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [
@@ -512,13 +698,13 @@
     "list": []
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-6h",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
   "title": "AI Anomaly Detection - Advanced Monitoring",
   "uid": "ai-anomaly-detection",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }

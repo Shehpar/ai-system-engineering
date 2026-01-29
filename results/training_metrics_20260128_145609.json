@@ -1,0 +1,59 @@
+{
+  "precision": 0.6153846153846154,
+  "recall": 1.0,
+  "f1_score": 0.7619047619047619,
+  "confusion_matrix": [
+    [
+      155,
+      5
+    ],
+    [
+      0,
+      8
+    ]
+  ],
+  "test_samples": 168,
+  "anomalies_detected": 13,
+  "parameters": {
+    "contamination": 0.05,
+    "n_estimators": 100
+  },
+  "grid_search_results": [
+    {
+      "contamination": 0.01,
+      "n_estimators": 100,
+      "train_anomalies": 8,
+      "train_anomaly_ratio": 0.010243277848911651
+    },
+    {
+      "contamination": 0.01,
+      "n_estimators": 200,
+      "train_anomalies": 8,
+      "train_anomaly_ratio": 0.010243277848911651
+    },
+    {
+      "contamination": 0.05,
+      "n_estimators": 100,
+      "train_anomalies": 39,
+      "train_anomaly_ratio": 0.0499359795134443
+    },
+    {
+      "contamination": 0.05,
+      "n_estimators": 200,
+      "train_anomalies": 39,
+      "train_anomaly_ratio": 0.0499359795134443
+    },
+    {
+      "contamination": 0.1,
+      "n_estimators": 100,
+      "train_anomalies": 78,
+      "train_anomaly_ratio": 0.0998719590268886
+    },
+    {
+      "contamination": 0.1,
+      "n_estimators": 200,
+      "train_anomalies": 78,
+      "train_anomaly_ratio": 0.0998719590268886
+    }
+  ]
+}

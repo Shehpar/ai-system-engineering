@@ -8,7 +8,7 @@ data:
   log_level: "INFO"
   influxdb_host: "influxdb-service"
   influxdb_port: "8086"
-  influxdb_database: "infrastructure_metrics"
+  influxdb_database: "system_metrics"
   mlflow_tracking_uri: "http://mlflow-service:5000"
   model_update_interval: "300"
   drift_check_interval: "60"
