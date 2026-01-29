@@ -1,4 +1,34 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_INFLUXDB",
+      "label": "InfluxDB",
+      "description": "InfluxDB datasource",
+      "type": "datasource",
+      "pluginId": "influxdb",
+      "value": "influxdb"
+    }
+  ],
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "influxdb",
+      "name": "InfluxDB",
+      "version": "1.0.0"
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -21,7 +51,10 @@
   "liveNow": true,
   "panels": [
     {
-      "datasource": "InfluxDB",
+      "datasource": {
+        "uid": "${DS_INFLUXDB}",
+        "type": "influxdb"
+      },
       "description": "Real-time CPU and Memory usage trends",
       "fieldConfig": {
         "defaults": {
@@ -31,7 +64,6 @@
           "custom": {
             "axisLabel": "",
             "axisPlacement": "auto",
-            "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -93,24 +125,33 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "alias": "CPU Usage %",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "A",
-          "query": "SELECT (100 - mean(usage_idle)) as cpu_usage FROM cpu WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+          "query": "SELECT (100 - usage_idle) as cpu_usage FROM cpu WHERE $timeFilter",
+          "alias": "CPU Usage %"
         },
         {
-          "alias": "Memory Usage %",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "B",
-          "query": "SELECT mean(used_percent) as mem_usage FROM mem WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+          "query": "SELECT used_percent as mem_usage FROM mem WHERE $timeFilter",
+          "alias": "Memory Usage %"
         }
       ],
       "title": "System Metrics - CPU & Memory",
       "type": "timeseries"
     },
     {
-      "datasource": "InfluxDB",
-      "description": "Network traffic analysis in bytes per second",
+      "datasource": {
+        "uid": "${DS_INFLUXDB}",
+        "type": "influxdb"
+      },
+      "description": "Network traffic analysis",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -119,7 +160,6 @@
           "custom": {
             "axisLabel": "Bytes/sec",
             "axisPlacement": "auto",
-            "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -177,23 +217,32 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "alias": "Network In (Bytes/s)",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "A",
-          "query": "SELECT mean(bytes_recv) as bytes_in FROM net WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+          "query": "SELECT mean(bytes_recv) as bytes_in FROM net WHERE $timeFilter GROUP BY time($__interval) FILL(null)",
+          "alias": "Network In (Bytes/s)"
         },
         {
-          "alias": "Network Out (Bytes/s)",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "B",
-          "query": "SELECT mean(bytes_sent) as bytes_out FROM net WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+          "query": "SELECT mean(bytes_sent) as bytes_out FROM net WHERE $timeFilter GROUP BY time($__interval) FILL(null)",
+          "alias": "Network Out (Bytes/s)"
         }
       ],
       "title": "Network Traffic Analysis",
       "type": "timeseries"
     },
     {
-      "datasource": "InfluxDB",
+      "datasource": {
+        "uid": "${DS_INFLUXDB}",
+        "type": "influxdb"
+      },
       "description": "Real-time anomaly predictions from ML model",
       "fieldConfig": {
         "defaults": {
@@ -203,7 +252,6 @@
           "custom": {
             "axisLabel": "",
             "axisPlacement": "auto",
-            "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 70,
             "gradientMode": "none",
@@ -271,17 +319,23 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "alias": "Anomaly Flag",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "A",
-          "query": "SELECT mean(is_anomaly) as anomaly_flag FROM ai_predictions WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+          "query": "SELECT mean(is_anomaly) as anomaly_flag FROM ai_predictions WHERE $timeFilter GROUP BY time($__interval) FILL(null)",
+          "alias": "Anomaly Flag"
         }
       ],
       "title": "Real-Time Anomaly Predictions (0=Normal, 1=Anomaly)",
       "type": "timeseries"
     },
     {
-      "datasource": "InfluxDB",
+      "datasource": {
+        "uid": "${DS_INFLUXDB}",
+        "type": "influxdb"
+      },
       "description": "Model inference latency in milliseconds",
       "fieldConfig": {
         "defaults": {
@@ -291,7 +345,6 @@
           "custom": {
             "axisLabel": "Latency (ms)",
             "axisPlacement": "auto",
-            "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -350,17 +403,23 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "alias": "Prediction Latency (ms)",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "A",
-          "query": "SELECT mean(prediction_latency_ms) as latency FROM ai_predictions WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+          "query": "SELECT mean(prediction_latency_ms) as latency FROM ai_predictions WHERE $timeFilter GROUP BY time($__interval) FILL(null)",
+          "alias": "Prediction Latency (ms)"
         }
       ],
       "title": "Prediction Latency (Target: <5ms)",
       "type": "timeseries"
     },
     {
-      "datasource": "InfluxDB",
+      "datasource": {
+        "uid": "${DS_INFLUXDB}",
+        "type": "influxdb"
+      },
       "description": "Anomaly score distribution from ML model",
       "fieldConfig": {
         "defaults": {
@@ -370,7 +429,6 @@
           "custom": {
             "axisLabel": "Score",
             "axisPlacement": "auto",
-            "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -430,17 +488,23 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "alias": "Anomaly Score",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "A",
-          "query": "SELECT mean(anomaly_score) as score FROM ai_predictions WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+          "query": "SELECT mean(anomaly_score) as score FROM ai_predictions WHERE $timeFilter GROUP BY time($__interval) FILL(null)",
+          "alias": "Anomaly Score"
         }
       ],
       "title": "Anomaly Score Distribution",
       "type": "timeseries"
     },
     {
-      "datasource": "InfluxDB",
+      "datasource": {
+        "uid": "${DS_INFLUXDB}",
+        "type": "influxdb"
+      },
       "description": "Count of anomalies detected over time",
       "fieldConfig": {
         "defaults": {
@@ -450,7 +514,6 @@
           "custom": {
             "axisLabel": "Count",
             "axisPlacement": "auto",
-            "barAlignment": 0,
             "drawStyle": "bars",
             "fillOpacity": 70,
             "gradientMode": "none",
@@ -508,17 +571,23 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "alias": "Anomalies Detected",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "A",
-          "query": "SELECT count(is_anomaly) FROM ai_predictions WHERE is_anomaly=1 AND \$timeFilter GROUP BY time(1m) FILL(0)"
+          "query": "SELECT count(is_anomaly) FROM ai_predictions WHERE is_anomaly=1 AND $timeFilter GROUP BY time(1m) FILL(0)",
+          "alias": "Anomalies Detected"
         }
       ],
       "title": "Anomaly Detection Throughput (Anomalies/Minute)",
       "type": "timeseries"
     },
     {
-      "datasource": "InfluxDB",
+      "datasource": {
+        "uid": "${DS_INFLUXDB}",
+        "type": "influxdb"
+      },
       "description": "Anomaly count trend - drift indicator",
       "fieldConfig": {
         "defaults": {
@@ -528,7 +597,6 @@
           "custom": {
             "axisLabel": "Count",
             "axisPlacement": "auto",
-            "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -586,17 +654,23 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "alias": "Anomaly Trend (Drift Indicator)",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "A",
-          "query": "SELECT count(is_anomaly) FROM ai_predictions WHERE \$timeFilter GROUP BY time(5m) FILL(0)"
+          "query": "SELECT count(is_anomaly) FROM ai_predictions WHERE $timeFilter GROUP BY time(5m) FILL(0)",
+          "alias": "Anomaly Trend (Drift Indicator)"
         }
       ],
       "title": "Anomaly Trend (Data Drift Indicator)",
       "type": "timeseries"
     },
     {
-      "datasource": "InfluxDB",
+      "datasource": {
+        "uid": "${DS_INFLUXDB}",
+        "type": "influxdb"
+      },
       "description": "System performance and anomaly detection rate overview",
       "fieldConfig": {
         "defaults": {
@@ -606,7 +680,6 @@
           "custom": {
             "axisLabel": "Value",
             "axisPlacement": "auto",
-            "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
@@ -664,22 +737,31 @@
       "pluginVersion": "10.0.0",
       "targets": [
         {
-          "alias": "Avg CPU Usage %",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "A",
-          "query": "SELECT (100 - mean(usage_idle)) as avg_cpu FROM cpu WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+          "query": "SELECT (100 - mean(usage_idle)) as avg_cpu FROM cpu WHERE $timeFilter GROUP BY time($__interval) FILL(null)",
+          "alias": "Avg CPU Usage %"
         },
         {
-          "alias": "Avg Memory Usage %",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "B",
-          "query": "SELECT mean(used_percent) as avg_mem FROM mem WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+          "query": "SELECT mean(used_percent) as avg_mem FROM mem WHERE $timeFilter GROUP BY time($__interval) FILL(null)",
+          "alias": "Avg Memory Usage %"
         },
         {
-          "alias": "Network Throughput (Bytes/s)",
-          "datasource": "InfluxDB",
+          "datasource": {
+            "uid": "${DS_INFLUXDB}",
+            "type": "influxdb"
+          },
           "refId": "C",
-          "query": "SELECT (mean(bytes_sent) + mean(bytes_recv)) as total_throughput FROM net WHERE \$timeFilter GROUP BY time(\$__interval) FILL(null)"
+          "query": "SELECT (mean(bytes_sent) + mean(bytes_recv)) as total_throughput FROM net WHERE $timeFilter GROUP BY time($__interval) FILL(null)",
+          "alias": "Network Throughput (Bytes/s)"
         }
       ],
       "title": "System Performance Overview",
