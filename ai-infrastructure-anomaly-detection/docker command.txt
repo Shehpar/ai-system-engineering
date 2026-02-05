@@ -1,0 +1,7 @@
+docker-compose -f docker/docker-compose.yml up --build
+
+docker-compose down
+
+
+
+docker-compose up --build -d
