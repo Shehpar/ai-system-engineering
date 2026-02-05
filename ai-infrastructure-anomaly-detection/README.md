@@ -1,7 +1,7 @@
 # AI Infrastructure Anomaly Detection System
 
 [![Tests](https://github.com/Shehpar/ai-system-engineering/actions/workflows/tests.yml/badge.svg)](https://github.com/Shehpar/ai-system-engineering/actions)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![Docker](https://img.shields.io/badge/docker-29.1.3+-blue.svg)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -17,7 +17,7 @@ A production-grade AI system for **real-time infrastructure anomaly detection** 
 
 ### Key Features
 
-- **🤖 Advanced ML Pipeline**: Offline training, grid search optimization, drift detection
+- **🤖 Advanced ML Pipeline**: Offline training, grid search optimization, SHAP explainability
 - **📊 Real-time Monitoring**: Live anomaly detection with 6.94ms latency
 - **📈 Auto-Provisioned Dashboards**: Grafana + InfluxDB time-series storage
 - **🔬 Experiment Tracking**: MLflow integration for full reproducibility
@@ -116,7 +116,7 @@ If you prefer step-by-step manual control:
 - **Docker Compose**: 2.0+ (included with Docker Desktop)
 - **RAM**: 4GB minimum (8GB recommended)
 - **Disk**: 5GB for images and data
-- **Python**: 3.10+ (for local development)
+- **Python**: 3.11+ (for local development; CI uses 3.11 and 3.12)
 
 ---
 
@@ -145,6 +145,7 @@ docker-compose -f docker/docker-compose.yml down
 ### Local Python Setup
 
 ```bash
+# Requires Python 3.11+ (CI runs on 3.11 and 3.12)
 # Install dependencies
 pip install -r requirements.txt
 
@@ -200,7 +201,7 @@ pytest tests/ -v
 - ✅ **Noise**: Stable under σ=0.01-0.1 Gaussian noise
 - ✅ **Missing Data**: Handles feature imputation gracefully
 - ✅ **Outliers**: 100% detection rate for 10x magnitude anomalies
-- ✅ **Drift**: Detects all critical distribution shifts
+- ✅ **SHAP**: Explains per-feature contributions to anomalies
 
 See [docs/MODEL_CARD.md](docs/MODEL_CARD.md) for detailed results.
 
@@ -214,7 +215,7 @@ ai-infrastructure-anomaly-detection/
 │   ├── train_model.py               # Offline training with grid search
 │   ├── validate_data.py             # Data quality validation (6 checks)
 │   ├── evaluate_model.py            # Robustness testing (4 scenarios)
-│   └── detect_anomaly.py            # Real-time inference with drift detection
+│   └── detect_anomaly.py            # Real-time inference with SHAP explainability
 ├── tests/                           # Unit tests (5 test cases)
 │   ├── conftest.py                  # pytest configuration
 │   ├── test_train_model.py
@@ -249,6 +250,16 @@ ai-infrastructure-anomaly-detection/
 ├── requirements.txt                 # Python dependencies
 └── README.md                        # This file
 ```
+
+### Related Folders in the Workspace
+
+- [../datacenter](../datacenter) — Flask-based metric generator + Telegraf config used for realistic data ingestion.
+    - docker-compose.yml, telegraf.conf
+    - flask_app/ (app.py, stress_test.py, Dockerfile, entrypoint.sh)
+    - flask_logs/ (runtime logs)
+- [../stress-test-docker](../stress-test-docker) — Standalone HTTP load generator for stress testing.
+    - docker-compose.yml, Dockerfile, entrypoint.sh
+    - http_load_generator.py, stress.py, requirements.txt
 
 ---
 
@@ -398,7 +409,7 @@ Full documentation in `/docs`:
 2. Apply fitted scaler
 3. Get predictions + anomaly scores
 4. Write results to InfluxDB
-5. Check for drift (KS-test)
+5. View SHAP feature contributions
 6. Trigger retraining if needed
 
 ---
@@ -476,7 +487,7 @@ Advanced MLOps features for production scale:
 - [ ] MLflow Model Registry
 - [ ] Blue-green deployment
 - [ ] SHAP explainability
-- [ ] Concept drift detection
+- [ ] Additional SHAP dashboards
 - [ ] Kubernetes deployment
 
 See [../IMPLEMENTATION_ROADMAP.md](../IMPLEMENTATION_ROADMAP.md) for details.
