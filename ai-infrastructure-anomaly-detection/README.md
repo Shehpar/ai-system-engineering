@@ -576,11 +576,6 @@ Optional:
 │   ├── training_metrics_*.json
 │   ├── validation_report_*.json
 │   └── evaluation_report_*.json
-├── docs/                            # Comprehensive documentation
-│   ├── REQUIREMENTS.md              # Problem statement & KPIs
-│   ├── ARCHITECTURE.md              # System design & data flow
-│   ├── MODEL_CARD.md                # Algorithm & robustness
-│   └── DEPLOYMENT.md                # Operations guide
 ├── .github/workflows/tests.yml      # CI/CD pipeline
 ├── requirements.txt                 # Python dependencies
 └── README.md                        # This file
@@ -713,18 +708,6 @@ docker-compose -f docker/docker-compose.yml exec -T ai_app pytest tests/ -v
 ```
 
 ---
-
-## 📚 Documentation
-
-Full documentation in `/docs`:
-
-| Document | Content |
-|----------|---------|
-| [AUTOMATION_GUIDE.md](docs/AUTOMATION_GUIDE.md) | Automated setup & testing scripts (NEW) |
-- [TIER_1_SUMMARY.md](../TIER_1_SUMMARY.md) - MLOps core (8 components)
-- [TIER_2_SUMMARY.md](../TIER_2_SUMMARY.md) - QA & operations (6 components)
-- [IMPLEMENTATION_ROADMAP.md](../IMPLEMENTATION_ROADMAP.md) - Course alignment
-
 ---
 
 ## 🔄 MLOps Pipeline
@@ -823,12 +806,6 @@ docker-compose -f docker/docker-compose.yml exec -T ai_app ls -la data/processed
 - ✅ **Grafana Dashboards**: Real-time visualization + SHAP panels
 - ✅ **Secrets Management**: Environment variables for secure credential handling
 - ✅ **Complete Monitoring Stack**: InfluxDB + Grafana + MLflow
-
-**Not Implemented** (Out of Scope):
-- ❌ MLflow Model Registry (versioning)
-- ❌ Blue-green deployment strategy
-- ❌ Kubernetes deployment manifests
-- ❌ Advanced drift detection (5 statistical tests)
 
 ---
 
