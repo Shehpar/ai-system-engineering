@@ -1,7 +1,7 @@
 # 📑 Master Index: Complete Project Documentation
 
-**Last Updated**: January 28, 2026  
-**Status**: ✅ **COMPLETE - READY FOR SUBMISSION**
+**Last Updated**: February 3, 2026  
+**Status**: ✅ **COMPLETE - PRODUCTION READY WITH AUTOMATION**
 
 ---
 
@@ -45,12 +45,21 @@
   - Limitations & fairness
   - Maintenance guide
 
-- **[DEPLOYMENT.md](ai-infrastructure-anomaly-detection/docs/DEPLOYMENT.md)** (15 pages)
+- **[DEPLOYMENT.md](ai-infrastructure-anomaly-detection/docs/DEPLOYMENT.md)** (20 pages)
+  - Automated setup (Option 1 - Recommended)
   - Docker Compose setup
   - Kubernetes deployment
   - Configuration options
   - Troubleshooting
   - Monitoring setup
+
+- **[AUTOMATION_GUIDE.md](ai-infrastructure-anomaly-detection/docs/AUTOMATION_GUIDE.md)** (25 pages) **NEW**
+  - Setup script architecture (setup_and_run.ps1)
+  - Testing script details (test_and_validate.ps1)
+  - HTTP stress testing
+  - Usage scenarios (demo, development, troubleshooting)
+  - Validation criteria
+  - Troubleshooting guide
 
 ---
 

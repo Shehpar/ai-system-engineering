@@ -1,0 +1,5 @@
+# HTTP Load Generator
+requests>=2.30.0
+
+# Utilities
+psutil>=5.9.0

@@ -10,6 +10,7 @@ services:
     image: telegraf:latest
     container_name: telegraf_site_b
     user: root
+    privileged: true
     depends_on:
       - flask_prod_server
     volumes:

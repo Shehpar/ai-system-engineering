@@ -1,23 +1,20 @@
 #!/bin/bash
 
-echo "=== LIGHT STRESS TEST STARTING ==="
-echo "CPU Threads: 1 (10% target)"
-echo "Memory Stress: 128MB"
-echo "Duration: Infinite (press Ctrl+C to stop)"
+echo "=== HTTP LOAD GENERATOR - DoS SIMULATION ==="
+echo "Target: Flask Server (http://host.docker.internal:5005)"
+echo "Mode: High traffic simulation"
+echo ""
+echo "This will send many HTTP requests to Flask to simulate:"
+echo "  - High user traffic"
+echo "  - DoS attack scenario"
+echo "  - Network stress"
+echo ""
+echo "Watch Grafana to see Flask container metrics spike!"
+echo "Press Ctrl+C to stop"
 echo ""
 
-# Run stress-ng for LIGHT CPU/memory stress
-# --cpu 1: 1 CPU worker
-# --cpu-load 10: target ~10% CPU
-# --vm 1: 1 memory worker
-# --vm-bytes 128M: 128MB allocation
-# --timeout 0: infinite
-# --verbose: show output
-stress-ng \
-  --cpu 1 \
-  --cpu-load 10 \
-  --vm 1 \
-  --vm-bytes 128M \
+# Run HTTP load generator to attack Flask server
+python3 /app/http_load_generator.py
   --timeout 0 \
   --verbose \
   --metrics

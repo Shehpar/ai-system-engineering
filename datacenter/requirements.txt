@@ -1,0 +1,5 @@
+# Flask Web Application
+flask>=2.3.0
+
+# Monitoring (optional, for app metrics)
+psutil>=5.9.0
