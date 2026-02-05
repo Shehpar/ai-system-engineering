@@ -21,3 +21,6 @@ requests>=2.30.0
 
 # Environment Management (best practices)
 python-dotenv>=1.0.0
+
+# Explainability (SHAP values)
+shap>=0.42.0

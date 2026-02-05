@@ -34,6 +34,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+try:
+    import shap
+    SHAP_AVAILABLE = True
+except ImportError:
+    SHAP_AVAILABLE = False
+    logger.warning("SHAP not available. Model explanations will be skipped. Install with: pip install shap")
+
 MLFLOW_EXPERIMENT_NAME = "anomaly_detection_retraining"
 
 # InfluxDB connection
@@ -209,9 +216,19 @@ def run_pipeline():
         scaler = joblib.load(SCALER_PATH)
         logger.info("Pre-trained model found. Starting detection immediately.")
         ai_is_ready = True
+
+        # Initialize SHAP explainer (optional)
+        shap_explainer = None
+        if SHAP_AVAILABLE:
+            try:
+                shap_explainer = shap.TreeExplainer(model)
+                logger.info("SHAP explainer initialized for model interpretability")
+            except Exception as shap_err:
+                logger.warning("Failed to initialize SHAP explainer: %s", shap_err)
     except:
         logger.warning("No model found. Detection will start after initial training.")
         ai_is_ready = False
+        shap_explainer = None
 
     last_retrain_time = time.time()
 
@@ -228,10 +245,25 @@ def run_pipeline():
 
             # STEP 3: IMMEDIATE DETECTION (Raw model output)
             model_prediction = 0
+            shap_values = [0.0, 0.0, 0.0]
             if ai_is_ready:
                 latest_scaled = scaler.transform(current_metrics)
                 prediction = model.predict(latest_scaled)
                 model_prediction = 1 if prediction[0] == -1 else 0
+
+                # STEP 3.1: SHAP Explainability (optional)
+                if shap_explainer is not None:
+                    try:
+                        shap_vals = shap_explainer.shap_values(latest_scaled)
+                        if isinstance(shap_vals, list):
+                            shap_vals = shap_vals[0]
+                        shap_values = shap_vals[0].tolist()
+                        logger.debug(
+                            "SHAP contributions - CPU: %.3f, Memory: %.3f, Network: %.3f",
+                            shap_values[0], shap_values[1], shap_values[2]
+                        )
+                    except Exception as shap_err:
+                        logger.debug("SHAP calculation skipped: %s", shap_err)
 
             # STEP 3.5: TEMPORAL BUFFERING + SURGE GATING
             # Only alert if anomaly is sustained AND CPU/MEM/NET is >= threshold
@@ -258,7 +290,10 @@ def run_pipeline():
                     "is_anomaly": ai_status,
                     "cpu_val": cpu_val,
                     "mem_val": mem_val,
-                    "net_val": net_val
+                    "net_val": net_val,
+                    "shap_cpu": float(shap_values[0]),
+                    "shap_memory": float(shap_values[1]),
+                    "shap_network": float(shap_values[2])
                 }
             }]
             client.write_points(json_body)
@@ -293,6 +328,15 @@ def run_pipeline():
                 ai_is_ready = True
                 last_retrain_time = time.time()
                 logger.info("Model retrained with %s samples", len(updated_memory))
+
+                # Reinitialize SHAP explainer after retraining
+                if SHAP_AVAILABLE:
+                    try:
+                        shap_explainer = shap.TreeExplainer(model)
+                        logger.debug("SHAP explainer reinitialized after retraining")
+                    except Exception as shap_err:
+                        logger.warning("Failed to reinitialize SHAP explainer: %s", shap_err)
+                        shap_explainer = None
                 
                 # 🔧 NEW: Evaluate model on COLLECTED ANOMALIES for real metrics
                 if os.path.exists(DETECTED_ANOMALIES_PATH) and os.path.getsize(DETECTED_ANOMALIES_PATH) > 0:
